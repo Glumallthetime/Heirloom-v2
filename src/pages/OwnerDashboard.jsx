@@ -1,23 +1,32 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase.js';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import OwnerHeader from '../components/shared/OwnerHeader.jsx';
 
 export default function OwnerDashboard() {
-  const [estates, setEstates] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { user }  = useAuth();
+  const [estates, setEstates]   = useState([]);
+  const [loading, setLoading]   = useState(true);
   const [creating, setCreating] = useState(false);
-  const [newName, setNewName] = useState('');
+  const [newName, setNewName]   = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [error, setError]       = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => { fetchEstates(); }, []);
+  // Only fetch once we have a confirmed user
+  useEffect(() => {
+    if (user) fetchEstates();
+  }, [user]);
 
   async function fetchEstates() {
-    const { data } = await supabase
+    setLoading(true);
+    const { data, error } = await supabase
       .from('estates')
-      .select('*, items(count)')
+      .select('*')
+      .eq('owner_id', user.id)
       .order('created_at', { ascending: false });
+    if (error) console.error('fetchEstates error:', error);
     setEstates(data || []);
     setLoading(false);
   }
@@ -26,15 +35,19 @@ export default function OwnerDashboard() {
     e.preventDefault();
     if (!newName.trim()) return;
     setCreating(true);
+    setError('');
     const { data, error } = await supabase
       .from('estates')
-      .insert({ name: newName.trim() })
+      .insert({ name: newName.trim(), owner_id: user.id })
       .select()
       .single();
-    if (!error && data) {
-      navigate(`/estate/${data.id}`);
+    if (error) {
+      console.error('createEstate error:', error);
+      setError(error.message);
+      setCreating(false);
+      return;
     }
-    setCreating(false);
+    navigate(`/estate/${data.id}`);
   }
 
   return (
@@ -67,21 +80,16 @@ export default function OwnerDashboard() {
                 autoFocus
                 className="flex-1 px-4 py-2.5 border border-cream-dark rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-gold/50 placeholder-navy/30"
               />
-              <button
-                type="submit"
-                disabled={creating}
-                className="bg-gold text-navy px-5 py-2.5 rounded-xl font-semibold text-base hover:bg-gold-dark transition-colors disabled:opacity-50"
-              >
+              <button type="submit" disabled={creating}
+                className="bg-gold text-navy px-5 py-2.5 rounded-xl font-semibold text-base hover:bg-gold-dark transition-colors disabled:opacity-50">
                 {creating ? 'Creating…' : 'Create'}
               </button>
-              <button
-                type="button"
-                onClick={() => { setShowForm(false); setNewName(''); }}
-                className="px-4 py-2.5 border border-cream-dark rounded-xl text-navy/50 text-base hover:border-navy/30"
-              >
+              <button type="button" onClick={() => { setShowForm(false); setNewName(''); setError(''); }}
+                className="px-4 py-2.5 border border-cream-dark rounded-xl text-navy/50 text-base hover:border-navy/30">
                 Cancel
               </button>
             </form>
+            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
           </div>
         )}
 
@@ -98,20 +106,14 @@ export default function OwnerDashboard() {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {estates.map((estate) => (
-              <Link
-                key={estate.id}
-                to={`/estate/${estate.id}`}
-                className="bg-white rounded-2xl border border-cream-dark shadow-card p-5 hover:shadow-md transition-shadow group"
-              >
+              <Link key={estate.id} to={`/estate/${estate.id}`}
+                className="bg-white rounded-2xl border border-cream-dark shadow-card p-5 hover:shadow-md transition-shadow group">
                 <div className="flex items-start justify-between mb-3">
                   <h2 className="font-serif text-lg font-semibold text-navy group-hover:text-navy-light transition-colors leading-snug">
                     {estate.name}
                   </h2>
                   <StatusBadge status={estate.status} />
                 </div>
-                <p className="text-sm text-navy/40">
-                  {estate.items?.[0]?.count ?? 0} item{estate.items?.[0]?.count !== 1 ? 's' : ''}
-                </p>
                 <p className="text-xs text-navy/30 mt-1">
                   Created {new Date(estate.created_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
@@ -125,16 +127,8 @@ export default function OwnerDashboard() {
 }
 
 function StatusBadge({ status }) {
-  const styles = {
-    active: 'bg-green-100 text-green-700',
-    draft:  'bg-gray-100 text-gray-600',
-    closed: 'bg-red-100 text-red-700',
-  };
-  return (
-    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${styles[status] || styles.draft}`}>
-      {status}
-    </span>
-  );
+  const styles = { active: 'bg-green-100 text-green-700', draft: 'bg-gray-100 text-gray-600', closed: 'bg-red-100 text-red-700' };
+  return <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${styles[status] || styles.draft}`}>{status}</span>;
 }
 
 function PlusIcon() {
