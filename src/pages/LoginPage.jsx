@@ -4,12 +4,12 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import AuthLayout from './AuthLayout.jsx';
 
 export default function LoginPage() {
-  const { signIn }   = useAuth();
-  const navigate     = useNavigate();
-  const [email, setEmail]       = useState('');
+  const { signIn } = useAuth();
+  const navigate   = useNavigate();
+  const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError]       = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [error,    setError]    = useState('');
+  const [loading,  setLoading]  = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -27,33 +27,25 @@ export default function LoginPage() {
       footer={<>Don't have an account? <Link to="/signup" className="text-navy font-semibold hover:underline">Sign up</Link></>}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" />
-        <Field label="Password" type="password" value={password} onChange={setPassword} placeholder="••••••••" />
+        <div>
+          <label className="block text-sm font-semibold text-navy/60 uppercase tracking-wide mb-1.5">Email</label>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required
+            className="w-full px-4 py-3 border border-cream-dark rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-gold/50 placeholder-navy/30" />
+        </div>
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-sm font-semibold text-navy/60 uppercase tracking-wide">Password</label>
+            <Link to="/forgot-password" className="text-sm text-navy/40 hover:text-navy transition-colors">Forgot password?</Link>
+          </div>
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required
+            className="w-full px-4 py-3 border border-cream-dark rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-gold/50 placeholder-navy/30" />
+        </div>
         {error && <p className="text-red-500 text-sm">{error}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 rounded-xl bg-navy text-white font-semibold text-base hover:bg-navy-light transition-colors disabled:opacity-50"
-        >
+        <button type="submit" disabled={loading}
+          className="w-full py-3 rounded-xl bg-navy text-white font-semibold text-base hover:bg-navy-light transition-colors disabled:opacity-50">
           {loading ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
     </AuthLayout>
-  );
-}
-
-function Field({ label, type, value, onChange, placeholder }) {
-  return (
-    <div>
-      <label className="block text-sm font-semibold text-navy/60 uppercase tracking-wide mb-1.5">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        required
-        className="w-full px-4 py-3 border border-cream-dark rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-gold/50 placeholder-navy/30"
-      />
-    </div>
   );
 }

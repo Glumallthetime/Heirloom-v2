@@ -1,15 +1,17 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext.jsx';
 
-import LandingPage      from './pages/LandingPage.jsx';
-import LoginPage        from './pages/LoginPage.jsx';
-import SignupPage       from './pages/SignupPage.jsx';
-import OwnerDashboard   from './pages/OwnerDashboard.jsx';
-import EstateManagement from './pages/EstateManagement.jsx';
-import AddItemPage      from './pages/AddItemPage.jsx';
-import EditItemPage     from './pages/EditItemPage.jsx';
-import ResultsPage      from './pages/ResultsPage.jsx';
-import FamilyView       from './pages/FamilyView.jsx';
+import LandingPage        from './pages/LandingPage.jsx';
+import LoginPage          from './pages/LoginPage.jsx';
+import SignupPage         from './pages/SignupPage.jsx';
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
+import ResetPasswordPage  from './pages/ResetPasswordPage.jsx';
+import OwnerDashboard     from './pages/OwnerDashboard.jsx';
+import EstateManagement   from './pages/EstateManagement.jsx';
+import AddItemPage        from './pages/AddItemPage.jsx';
+import EditItemPage       from './pages/EditItemPage.jsx';
+import ResultsPage        from './pages/ResultsPage.jsx';
+import FamilyView         from './pages/FamilyView.jsx';
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -25,19 +27,21 @@ export default function App() {
   return (
     <Routes>
       {/* Public routes */}
-      <Route path="/"        element={user ? <Navigate to="/dashboard" /> : <LandingPage />} />
-      <Route path="/login"   element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
-      <Route path="/signup"  element={user ? <Navigate to="/dashboard" /> : <SignupPage />} />
+      <Route path="/"                element={user ? <Navigate to="/dashboard" /> : <LandingPage />} />
+      <Route path="/login"           element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
+      <Route path="/signup"          element={user ? <Navigate to="/dashboard" /> : <SignupPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password"  element={<ResetPasswordPage />} />
 
       {/* Family member route — always public */}
       <Route path="/e/:shareToken" element={<FamilyView />} />
 
       {/* Owner routes — require auth */}
-      <Route path="/dashboard"                       element={<Protected><OwnerDashboard /></Protected>} />
-      <Route path="/estate/:id"                      element={<Protected><EstateManagement /></Protected>} />
-      <Route path="/estate/:id/item/new"             element={<Protected><AddItemPage /></Protected>} />
-      <Route path="/estate/:id/item/:itemId/edit"    element={<Protected><EditItemPage /></Protected>} />
-      <Route path="/estate/:id/results"              element={<Protected><ResultsPage /></Protected>} />
+      <Route path="/dashboard"                    element={<Protected><OwnerDashboard /></Protected>} />
+      <Route path="/estate/:id"                   element={<Protected><EstateManagement /></Protected>} />
+      <Route path="/estate/:id/item/new"          element={<Protected><AddItemPage /></Protected>} />
+      <Route path="/estate/:id/item/:itemId/edit" element={<Protected><EditItemPage /></Protected>} />
+      <Route path="/estate/:id/results"           element={<Protected><ResultsPage /></Protected>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" />} />
