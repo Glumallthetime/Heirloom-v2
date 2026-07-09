@@ -4,12 +4,14 @@ import { supabase } from '../supabase.js';
 import OwnerHeader from '../components/shared/OwnerHeader.jsx';
 import { analyzeConflicts, exportToCSV } from '../utils/analyzeConflicts.js';
 
+
 export default function ResultsPage() {
   const { id } = useParams();
   const [estate,      setEstate]      = useState(null);
   const [submissions, setSubmissions] = useState([]);
   const [items,       setItems]       = useState([]);
   const [loading,     setLoading]     = useState(true);
+  const [pdfLoading,  setPdfLoading]  = useState(false);
 
   useEffect(() => { fetchData(); }, [id]);
 
@@ -27,7 +29,7 @@ export default function ResultsPage() {
 
   const analysis = useMemo(() => analyzeConflicts(submissions, items), [submissions, items]);
 
-  function handleExport() {
+  function handleCSV() {
     const csv  = exportToCSV(analysis);
     const blob = new Blob([csv], { type: 'text/csv' });
     const url  = URL.createObjectURL(blob);
@@ -38,6 +40,18 @@ export default function ResultsPage() {
     URL.revokeObjectURL(url);
   }
 
+  async function handlePDF() {
+    const { downloadDistributionPDF } = await import('../utils/HeirloomPDF.jsx');
+    setPdfLoading(true);
+    try {
+      await downloadDistributionPDF(estate, analysis);
+    } catch (err) {
+      console.error('PDF generation failed:', err);
+      alert('PDF generation failed. Please try again.');
+    }
+    setPdfLoading(false);
+  }
+
   if (loading) return <Loading />;
 
   return (
@@ -45,15 +59,26 @@ export default function ResultsPage() {
       <OwnerHeader title={`${estate?.name} — Results`} back={`/estate/${id}`} />
 
       <main className="max-w-screen-xl mx-auto px-4 sm:px-6 py-8">
-        {/* Summary */}
+        {/* Header row */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
             <h1 className="font-serif text-2xl font-semibold text-navy">Wishlist Results</h1>
             <p className="text-navy/50 text-base mt-1">{analysis.totalSubmissions} submission{analysis.totalSubmissions !== 1 ? 's' : ''} received</p>
           </div>
-          <button onClick={handleExport} className="bg-gold text-navy px-5 py-2.5 rounded-xl font-semibold text-base hover:bg-gold-dark transition-colors">
-            Export CSV
-          </button>
+          <div className="flex gap-2">
+            <button onClick={handleCSV}
+              className="border border-cream-dark text-navy/60 px-4 py-2.5 rounded-xl font-semibold text-base hover:border-navy/30 transition-colors">
+              Export CSV
+            </button>
+            <button onClick={handlePDF} disabled={pdfLoading || analysis.totalSubmissions === 0}
+              className="bg-navy text-white px-5 py-2.5 rounded-xl font-semibold text-base hover:bg-navy-light transition-colors disabled:opacity-50 flex items-center gap-2">
+              {pdfLoading ? (
+                <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Generating…</>
+              ) : (
+                <><DownloadIcon /> Download PDF</>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Stat cards */}
@@ -167,5 +192,13 @@ function Loading() {
     <div className="min-h-screen bg-cream flex items-center justify-center">
       <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin" />
     </div>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" />
+    </svg>
   );
 }
